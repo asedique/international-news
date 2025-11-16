@@ -49,7 +49,6 @@
 </main>
 
 <script>
-// WORKING FEEDS
 const feeds = [
     { name: "Reuters", url: "https://news.google.com/rss/search?q=Reuters+World&hl=en-US&gl=US&ceid=US:en" },
     { name: "AP News", url: "https://news.google.com/rss/search?q=Associated+Press+World&hl=en-US&gl=US&ceid=US:en" },
@@ -64,7 +63,6 @@ function sanitize(t){
     return t ? t.replace(/(<([^>]+)>)/gi, "") : "";
 }
 
-// Universal Image Extractor
 function extractImage(item){
     let media = item.querySelector("media\\:content, media\\:thumbnail");
     if (media && media.getAttribute("url")) return media.getAttribute("url");
@@ -111,11 +109,9 @@ function fetchFeed(feed){
             const xml = new DOMParser().parseFromString(data.contents, "text/xml");
 
             let items = [...xml.querySelectorAll("item")];
-            if (items.length === 0) {
-                items = [...xml.querySelectorAll("entry")];
-            }
-            items = items.slice(0, 12);
+            if (items.length === 0) items = [...xml.querySelectorAll("entry")];
 
+            items = items.slice(0, 12);
             const body = document.getElementById("body-" + key);
             let count = 0;
 
@@ -128,8 +124,7 @@ function fetchFeed(feed){
 
                 const desc =
                     sanitize(i.querySelector("description")?.textContent) ||
-                    sanitize(i.querySelector("summary")?.textContent) ||
-                    "";
+                    sanitize(i.querySelector("summary")?.textContent) || "";
 
                 const img = extractImage(i);
 
@@ -161,8 +156,8 @@ document.addEventListener("click", e => {
     if (e.target.classList.contains("filter")) {
         document.querySelectorAll(".filter").forEach(btn => btn.classList.remove("active"));
         e.target.classList.add("active");
-        const src = e.target.dataset.source;
 
+        const src = e.target.dataset.source;
         document.querySelectorAll(".column").forEach(col => {
             col.style.display = (src === "all" || col.dataset.source === src) ? "" : "none";
         });
@@ -179,6 +174,7 @@ document.getElementById("searchBar").addEventListener("input", function(){
 initColumns();
 feeds.forEach(fetchFeed);
 </script>
+
 
 
 </body>

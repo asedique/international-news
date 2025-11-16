@@ -85,7 +85,7 @@ function initColumns(){
 }
 
 function fetchFeed(feed){
-    const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent(feed.url)}`;
+    const proxy = `https://raspy-band-fd14.sedique.workers.dev/?url=${encodeURIComponent(feed.url)}`;
     const key=feed.name.replace(/\s+/g,'');
     fetch(proxy).then(r=>r.json()).then(data=>{
         const xml=new DOMParser().parseFromString(data.contents,"text/xml");

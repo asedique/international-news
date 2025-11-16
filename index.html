@@ -49,13 +49,13 @@
 
 <script>
 const feeds = [
-    { name:"Reuters", url:"https://www.reutersagency.com/feed/?best-topics=world&post_type=best" },
-    { name:"AP News", url:"https://apnews.com/apf-intlnews?format=xml" },
-    { name:"BBC", url:"https://feeds.bbci.co.uk/news/world/rss.xml" },
-    { name:"Al Jazeera", url:"https://www.aljazeera.com/xml/rss/all.xml" },
-    { name:"DW", url:"https://rss.dw.com/rdf/rss-en-world" },
-    { name:"MarketWatch", url:"https://feeds.content.mktw.net/rss/markets" },
-    { name:"CNBC", url:"https://www.cnbc.com/id/100003114/device/rss/rss.html" }
+    { name: "Reuters", url: "https://rsshub.app/reuters/world" },
+    { name: "AP News", url: "https://rsshub.app/apnews/topics/world-news" },
+    { name: "BBC", url: "https://feeds.bbci.co.uk/news/world/rss.xml" },
+    { name: "Al Jazeera", url: "https://www.aljazeera.com/xml/rss/all.xml" },
+    { name: "DW", url: "https://rss.dw.com/xml/rss-en-world" },
+    { name: "MarketWatch", url: "https://feeds.marketwatch.com/marketwatch/topstories" },
+    { name: "CNBC", url: "https://www.cnbc.com/id/100003114/device/rss/rss.html" }
 ];
 
 function sanitize(t){return t?t.replace(/(<([^>]+)>)/gi,""):'';}

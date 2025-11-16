@@ -60,130 +60,126 @@ const feeds = [
     { name: "CNBC", url: "https://www.cnbc.com/id/100003114/device/rss/rss.html" }
 ];
 
-function sanitize(t){return t?t.replace(/(<([^>]+)>)/gi,""):'';}
+function sanitize(t){
+    return t ? t.replace(/(<([^>]+)>)/gi, "") : "";
+}
 
-// UNIVERSAL IMAGE EXTRACTOR
-function extractImage(item) {
-    // 1. media-content / media-thumbnail (rewritten by worker)
-    const m1 = item.querySelector("media-content");
-    if (m1?.getAttribute("url")) return m1.getAttribute("url");
+// Universal Image Extractor
+function extractImage(item){
+    let media = item.querySelector("media\\:content, media\\:thumbnail");
+    if (media && media.getAttribute("url")) return media.getAttribute("url");
 
-    const m2 = item.querySelector("media-thumbnail");
-    if (m2?.getAttribute("url")) return m2.getAttribute("url");
+    let enc = item.querySelector("enclosure");
+    if (enc && enc.getAttribute("url")) return enc.getAttribute("url");
 
-    // 2. enclosure
-    const enc = item.querySelector("enclosure");
-    if (enc?.getAttribute("url")) return enc.getAttribute("url");
-
-    // 3. images in description
-    const desc = item.querySelector("description")?.textContent || "";
+    let desc = item.querySelector("description")?.textContent || "";
     let match = desc.match(/<img[^>]+src="([^">]+)"/i);
     if (match) return match[1];
 
-    // 4. images inside content-encoded
-    const cdata = item.querySelector("content-encoded")?.textContent || "";
-    match = cdata.match(/<img[^>]+src="([^">]+)"/i);
+    let content = item.querySelector("content")?.textContent || "";
+    match = content.match(/<img[^>]+src="([^">]+)"/i);
     if (match) return match[1];
 
     return null;
 }
 
-}
-
 function initColumns(){
-    const c=document.getElementById('columns');
-    feeds.forEach(f=>{
-        const key=f.name.replace(/\s+/g,'');
-        const col=document.createElement('section');
-        col.className="column";
-        col.dataset.source=f.name;
-        col.innerHTML=`
+    const container = document.getElementById("columns");
+    feeds.forEach(feed => {
+        const key = feed.name.replace(/\s+/g, "");
+        const col = document.createElement("section");
+        col.className = "column";
+        col.dataset.source = feed.name;
+        col.innerHTML = `
             <div class="column-header">
-                <span class="column-title">${f.name}</span>
+                <span class="column-title">${feed.name}</span>
                 <span id="count-${key}" style="float:right;color:#9ca3af;font-size:11px;">0</span>
             </div>
             <div id="body-${key}"></div>
         `;
-        c.appendChild(col);
+        container.appendChild(col);
     });
 }
 
 function fetchFeed(feed){
     const proxy = `https://raspy-band-fd14.sedique.workers.dev/?url=${encodeURIComponent(feed.url)}`;
-    const key=feed.name.replace(/\s+/g,'');
+    const key = feed.name.replace(/\s+/g, "");
 
     fetch(proxy)
-        .then(r=>r.json())
-        .then(data=>{
-            const xml=new DOMParser().parseFromString(data.contents,"text/xml");
+        .then(r => r.json())
+        .then(data => {
+            const xml = new DOMParser().parseFromString(data.contents, "text/xml");
 
-            // support RSS <item> and Atom <entry>
-            let items=[...xml.querySelectorAll("item")];
-            if (items.length === 0) items=[...xml.querySelectorAll("entry")];
-            items = items.slice(0,12);
+            let items = [...xml.querySelectorAll("item")];
+            if (items.length === 0) {
+                items = [...xml.querySelectorAll("entry")];
+            }
+            items = items.slice(0, 12);
 
-            const body=document.getElementById("body-"+key);
-            let count=0;
+            const body = document.getElementById("body-" + key);
+            let count = 0;
 
-            items.forEach(i=>{
-                const title=sanitize(i.querySelector("title")?.textContent);
+            items.forEach(i => {
+                const title = sanitize(i.querySelector("title")?.textContent);
+                if (!title) return;
 
-                // Atom: <link href="">
                 let linkEl = i.querySelector("link");
                 let link = linkEl?.getAttribute("href") || linkEl?.textContent || "";
 
-                const desc = sanitize(
-                    i.querySelector("description")?.textContent ||
-                    i.querySelector("summary")?.textContent ||
-                    ""
-                );
+                const desc =
+                    sanitize(i.querySelector("description")?.textContent) ||
+                    sanitize(i.querySelector("summary")?.textContent) ||
+                    "";
 
                 const img = extractImage(i);
-                if(!title) return;
 
-                const card=document.createElement("div");
-                card.className="card";
-                card.dataset.source=feed.name;
-                card.dataset.searchtext=(title+" "+desc).toLowerCase();
-                card.innerHTML=`
+                const card = document.createElement("div");
+                card.className = "card";
+                card.dataset.source = feed.name;
+                card.dataset.searchtext = (title + " " + desc).toLowerCase();
+                card.innerHTML = `
                     ${img ? `<img src="${img}" alt="">` : ""}
                     <div class="card-body">
                         <div class="card-title"><a href="${link}" target="_blank">${title}</a></div>
                         <div class="card-desc">${desc}</div>
-                    </div>`;
+                    </div>
+                `;
                 body.appendChild(card);
                 count++;
             });
 
-            document.getElementById("count-"+key).textContent=count;
+            document.getElementById("count-" + key).textContent = count;
         })
-        .catch(()=>{
-            document.getElementById("body-"+key).innerHTML="<p style='color:#888;font-size:13px;'>Feed blocked or unavailable.</p>";
-            document.getElementById("count-"+key).textContent="0";
+        .catch(() => {
+            document.getElementById("body-" + key).innerHTML =
+                "<p style='color:#888;font-size:13px;'>Feed blocked or unavailable.</p>";
+            document.getElementById("count-" + key).textContent = "0";
         });
 }
 
-document.addEventListener("click",e=>{
-    if(e.target.classList.contains("filter")){
-        document.querySelectorAll(".filter").forEach(b=>b.classList.remove("active"));
+document.addEventListener("click", e => {
+    if (e.target.classList.contains("filter")) {
+        document.querySelectorAll(".filter").forEach(btn => btn.classList.remove("active"));
         e.target.classList.add("active");
-        const src=e.target.dataset.source;
-        document.querySelectorAll(".column").forEach(col=>{
-            col.style.display=(src==="all"||col.dataset.source===src)?"":"none";
+        const src = e.target.dataset.source;
+
+        document.querySelectorAll(".column").forEach(col => {
+            col.style.display = (src === "all" || col.dataset.source === src) ? "" : "none";
         });
     }
 });
 
-document.getElementById("searchBar").addEventListener("input",function(){
-    const q=this.value.toLowerCase();
-    document.querySelectorAll(".card").forEach(card=>{
-        card.style.display=card.dataset.searchtext.includes(q)?"":"none";
+document.getElementById("searchBar").addEventListener("input", function(){
+    const q = this.value.toLowerCase();
+    document.querySelectorAll(".card").forEach(card => {
+        card.style.display = card.dataset.searchtext.includes(q) ? "" : "none";
     });
 });
 
 initColumns();
 feeds.forEach(fetchFeed);
 </script>
+
 
 </body>
 </html>

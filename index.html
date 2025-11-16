@@ -25,6 +25,7 @@
     .card-desc{font-size:13px;color:#cbd5f5;margin-top:6px;}
 </style>
 </head>
+
 <body>
 
 <header>
@@ -61,8 +62,8 @@ const feeds = [
 function sanitize(t){return t?t.replace(/(<([^>]+)>)/gi,""):'';}
 
 function extractImage(item){
-    const media=item.querySelector("media\:content, media\:thumbnail");
-    if(media && media.getAttribute("url")) return media.getAttribute("url");
+    const media = item.querySelector("media\\:content, media\\:thumbnail");
+    if (media && media.getAttribute("url")) return media.getAttribute("url");
     return null;
 }
 
@@ -87,35 +88,57 @@ function initColumns(){
 function fetchFeed(feed){
     const proxy = `https://raspy-band-fd14.sedique.workers.dev/?url=${encodeURIComponent(feed.url)}`;
     const key=feed.name.replace(/\s+/g,'');
-    fetch(proxy).then(r=>r.json()).then(data=>{
-        const xml=new DOMParser().parseFromString(data.contents,"text/xml");
-        const items=[...xml.querySelectorAll("item")].slice(0,12);
-        const body=document.getElementById("body-"+key);
-        let count=0;
-        items.forEach(i=>{
-            const title=sanitize(i.querySelector("title")?.textContent);
-            const link=i.querySelector("link")?.textContent;
-            const desc=sanitize(i.querySelector("description")?.textContent);
-            const img=extractImage(i);
-            if(!title) return;
-            const card=document.createElement("div");
-            card.className="card";
-            card.dataset.source=feed.name;
-            card.dataset.searchtext=(title+" "+desc).toLowerCase();
-            card.innerHTML=`
-                ${img ? `<img src="${img}" alt="">`:""}
-                <div class="card-body">
-                    <div class="card-title"><a href="${link}" target="_blank">${title}</a></div>
-                    <div class="card-desc">${desc}</div>
-                </div>`;
-            body.appendChild(card);
-            count++;
+
+    fetch(proxy)
+        .then(r=>r.json())
+        .then(data=>{
+            const xml=new DOMParser().parseFromString(data.contents,"text/xml");
+
+            // Support RSS <item> and Atom <entry>
+            let items=[...xml.querySelectorAll("item")];
+            if (items.length === 0) items=[...xml.querySelectorAll("entry")];
+
+            items = items.slice(0,12);
+
+            const body=document.getElementById("body-"+key);
+            let count=0;
+
+            items.forEach(i=>{
+                const title=sanitize(i.querySelector("title")?.textContent);
+
+                // Atom <link href="">
+                let linkEl = i.querySelector("link");
+                let link = linkEl?.getAttribute("href") || linkEl?.textContent || "";
+
+                const desc = sanitize(
+                    i.querySelector("description")?.textContent ||
+                    i.querySelector("summary")?.textContent ||
+                    ""
+                );
+
+                const img = extractImage(i);
+                if(!title) return;
+
+                const card=document.createElement("div");
+                card.className="card";
+                card.dataset.source=feed.name;
+                card.dataset.searchtext=(title+" "+desc).toLowerCase();
+                card.innerHTML=`
+                    ${img ? `<img src="${img}" alt="">` : ""}
+                    <div class="card-body">
+                        <div class="card-title"><a href="${link}" target="_blank">${title}</a></div>
+                        <div class="card-desc">${desc}</div>
+                    </div>`;
+                body.appendChild(card);
+                count++;
+            });
+
+            document.getElementById("count-"+key).textContent=count;
+        })
+        .catch(()=>{
+            document.getElementById("body-"+key).innerHTML="<p style='color:#888;font-size:13px;'>Feed blocked or unavailable.</p>";
+            document.getElementById("count-"+key).textContent="0";
         });
-        document.getElementById("count-"+key).textContent=count;
-    }).catch(()=>{
-        document.getElementById("body-"+key).innerHTML="<p style='color:#888;font-size:13px;'>Feed blocked or unavailable.</p>";
-        document.getElementById("count-"+key).textContent="0";
-    });
 }
 
 document.addEventListener("click",e=>{
@@ -142,3 +165,4 @@ feeds.forEach(fetchFeed);
 
 </body>
 </html>
+
